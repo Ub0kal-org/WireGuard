@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headscale-public
+  namespace: headscale
+  annotations:
+    cert-manager.io/enabled: "false"
+spec:
+  ingressClassName: caddy
+  rules:
+    - host: headscale.keksi.si
+      http:
+        paths:
+          # Web UI Dashboard route
+          - path: /web
+            pathType: Prefix
+            backend:
+              service:
+                name: headscale
+                port:
+                  number: 80
+          # Headscale Control Plane API & Node Registration route
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: headscale
+                port:
+                  number: 8080
+    - host: hs.keksi.si
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: headscale
+                port:
+                  number: 8080
+    - host: headscale-ui.keksi.si
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: headscale
+                port:
+                  number: 80

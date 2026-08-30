@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headscale
+  namespace: headscale
+  labels:
+    app.kubernetes.io/name: headscale
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: headscale
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: headscale
+    spec:
+      containers:
+        - name: headscale
+          image: ghcr.io/juanfont/headscale:0.25.1
+          command: ["headscale"]
+          args: ["serve"]
+          securityContext:
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+            - name: stun-udp
+              containerPort: 53
+              protocol: UDP
+            - name: grpc
+              containerPort: 50443
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/headscale/config.yaml
+              subPath: config.yaml
+            - name: config
+              mountPath: /etc/headscale/acl.hujson
+              subPath: acl.hujson
+            - name: data
+              mountPath: /var/lib/headscale
+
+        - name: headscale-ui
+          image: ghcr.io/gurucomputing/headscale-ui:latest
+          ports:
+            - name: ui
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: HTTP_PORT
+              value: "80"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+
+      volumes:
+        - name: config
+          configMap:
+            name: headscale-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: headscale-data

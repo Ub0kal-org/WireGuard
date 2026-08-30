@@ -1,0 +1,35 @@
+services:
+  headscale:
+    image: ghcr.io/juanfont/headscale:0.25.1
+    container_name: headscale
+    restart: unless-stopped
+    command: headscale serve
+    volumes:
+      - ./config/config.yaml:/etc/headscale/config.yaml:ro
+      - ./config/acl.hujson:/etc/headscale/acl.hujson:ro
+      - headscale_data:/var/lib/headscale
+    ports:
+      - "8080:8080"        # Control plane HTTP API
+      - "9090:9090"        # Metrics
+      - "53:53/udp"        # STUN & NAT Traversal on Port 53 UDP
+      - "3478:53/udp"      # Standard STUN fallback port
+      - "50443:50443"      # gRPC endpoint
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      - TZ=UTC
+
+  headscale-ui:
+    image: ghcr.io/gurucomputing/headscale-ui:latest
+    container_name: headscale-ui
+    restart: unless-stopped
+    ports:
+      - "8081:80"          # Headscale Web UI Dashboard
+    environment:
+      - HTTP_PORT=80
+    depends_on:
+      - headscale
+
+volumes:
+  headscale_data:
+    name: headscale_data
