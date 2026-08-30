@@ -26,14 +26,12 @@ data:
         region_id: 999
         region_code: "keksi"
         region_name: "Keksi DERP & STUN Relay"
-        # STUN listener for UDP NAT traversal
         stun_listen_addr: "0.0.0.0:3478"
         private_key_path: /var/lib/headscale/derp_server_private.key
         automatically_add_embedded_derp_region: true
-        ipv4: 1.1.1.1
-        ipv6: none
       urls:
         - https://controlplane.tailscale.com/derpmap/default
+      paths: []
       auto_update_enabled: true
       update_frequency: 24h
 
@@ -43,6 +41,7 @@ data:
       type: sqlite
       sqlite:
         path: /var/lib/headscale/db.sqlite
+        write_ahead_log: true
 
     dns:
       magic_dns: true
@@ -51,6 +50,7 @@ data:
         global:
           - 1.1.1.1
           - 8.8.8.8
+        split: {}
       search_domains: []
       extra_records: []
 
