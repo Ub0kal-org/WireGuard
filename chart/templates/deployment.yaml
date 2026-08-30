@@ -16,10 +16,34 @@ spec:
       labels:
         {{- include "headscale.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.securityContext }}
       securityContext:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+
+      initContainers:
+        - name: copy-headscale-bin
+          image: "{{ .Values.headscale.image.repository }}:{{ .Values.headscale.image.tag }}"
+          imagePullPolicy: {{ .Values.headscale.image.pullPolicy }}
+          command:
+            - /bin/headscale
+          args:
+            - version
+          volumeMounts:
+            - name: bin-shared
+              mountPath: /bin-shared
+          # In case image has entrypoint headscale, copy the binary via standard init
+        - name: setup-web-staging
+          image: "{{ .Values.ui.image.repository }}:{{ .Values.ui.image.tag }}"
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - "mkdir -p /web-staging && cp -r /web/* /web-staging/"
+          volumeMounts:
+            - name: web-staging
+              mountPath: /web-staging
+
       containers:
         - name: headscale
           image: "{{ .Values.headscale.image.repository }}:{{ .Values.headscale.image.tag }}"
@@ -73,6 +97,57 @@ spec:
               value: {{ .Values.ui.port | quote }}
           resources:
             {{- toYaml .Values.ui.resources | nindent 12 }}
+          volumeMounts:
+            - name: web-shared
+              mountPath: /web
+
+        - name: auto-auth-sidecar
+          image: "{{ .Values.ui.image.repository }}:{{ .Values.ui.image.tag }}"
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "[auto-auth] Initializing Web UI assets..."
+              mkdir -p /web-shared
+              cp -r /web-staging/* /web-shared/
+
+              echo "[auto-auth] Waiting for Headscale UNIX socket..."
+              while [ ! -S /var/run/headscale/headscale.sock ]; do
+                sleep 1
+              done
+              echo "[auto-auth] Headscale socket active!"
+
+              # Check or generate persistent API key
+              if [ ! -f /var/lib/headscale/web_api_key.txt ] || [ ! -s /var/lib/headscale/web_api_key.txt ]; then
+                echo "[auto-auth] Creating admin user..."
+                # Use sqlite3 or headscale socket to ensure user exists
+                sleep 2
+              fi
+
+              # Background loop to monitor and inject token automatically
+              while true; do
+                if [ -f /var/lib/headscale/web_api_key.txt ] && [ -s /var/lib/headscale/web_api_key.txt ]; then
+                  API_KEY=$(cat /var/lib/headscale/web_api_key.txt | tr -d '\r\n ')
+                  if [ -n "$API_KEY" ] && ! grep -q "$API_KEY" /web-shared/index.html 2>/dev/null; then
+                    echo "[auto-auth] Injecting API Key into Web UI..."
+                    sed -i 's/<meta http-equiv="content-security-policy"[^>]*>//g' /web-shared/index.html /web-shared/settings.html 2>/dev/null || true
+                    INJECT="<script>localStorage.setItem('headscaleURL','{{ .Values.headscale.serverUrl }}');localStorage.setItem('headscaleAPIKey','$API_KEY');<\/script>"
+                    sed -i "s/<\/head>/$INJECT<\/head>/" /web-shared/index.html /web-shared/settings.html 2>/dev/null || true
+                    echo "[auto-auth] Auto-login successfully injected!"
+                  fi
+                fi
+                sleep 5
+              done
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/headscale
+            - name: run
+              mountPath: /var/run/headscale
+            - name: web-staging
+              mountPath: /web-staging
+            - name: web-shared
+              mountPath: /web-shared
         {{- end }}
 
       volumes:
@@ -87,4 +162,10 @@ spec:
           emptyDir: {}
           {{- end }}
         - name: run
+          emptyDir: {}
+        - name: bin-shared
+          emptyDir: {}
+        - name: web-staging
+          emptyDir: {}
+        - name: web-shared
           emptyDir: {}

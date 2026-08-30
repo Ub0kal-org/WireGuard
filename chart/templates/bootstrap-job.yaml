@@ -29,16 +29,19 @@ spec:
               echo "Found Headscale pod: $POD_NAME"
 
               # 1. Ensure admin user exists
-              kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c headscale -- headscale users create {{ .Values.bootstrap.user | quote }} || true
+              kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c headscale -- headscale users create {{ .Values.bootstrap.user | default "admin" }} || true
 
-              # 2. Generate API Key
-              API_KEY=$(kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c headscale -- headscale apikeys create --expiration {{ .Values.bootstrap.expiration | quote }})
+              # 2. Check or generate API Key
+              API_KEY=$(kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c headscale -- headscale apikeys create --expiration {{ .Values.bootstrap.expiration | default "3650d" }})
               echo "=========================================================="
               echo "AUTOMATICALLY GENERATED HEADSCALE API KEY:"
               echo "$API_KEY"
               echo "=========================================================="
 
-              # 3. Store in Kubernetes Secret
+              # 3. Write persistent key directly into Headscale pod /var/lib/headscale/web_api_key.txt for zero-touch UI auto-auth
+              kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c auto-auth-sidecar -- sh -c "echo '$API_KEY' > /var/lib/headscale/web_api_key.txt" || true
+
+              # 4. Store in Kubernetes Secret
               kubectl create secret generic {{ include "headscale.fullname" . }}-api-credentials \
                 -n {{ .Release.Namespace }} \
                 --from-literal=url="{{ .Values.headscale.serverUrl }}" \
