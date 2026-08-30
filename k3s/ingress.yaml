@@ -7,6 +7,10 @@ metadata:
     cert-manager.io/enabled: "false"
 spec:
   ingressClassName: caddy
+  tls:
+    - hosts:
+        - headscale.keksi.si
+        - keksi.si
   rules:
     - host: headscale.keksi.si
       http:
@@ -27,9 +31,16 @@ spec:
                 name: headscale
                 port:
                   number: 8080
-    - host: hs.keksi.si
+    - host: keksi.si
       http:
         paths:
+          - path: /web
+            pathType: Prefix
+            backend:
+              service:
+                name: headscale
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:
@@ -37,13 +48,3 @@ spec:
                 name: headscale
                 port:
                   number: 8080
-    - host: headscale-ui.keksi.si
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: headscale
-                port:
-                  number: 80
