@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: headscale
-          image: headscale/headscale:0.29.3
+          image: ghcr.io/juanfont/headscale:v0.29.3
           imagePullPolicy: IfNotPresent
           args: ["serve"]
           securityContext:
