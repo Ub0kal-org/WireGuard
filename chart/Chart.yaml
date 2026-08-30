@@ -1,0 +1,14 @@
+apiVersion: v2
+name: headscale
+description: Helm chart for Headscale WireGuard Mesh VPN Control Plane and Web UI
+type: application
+version: 0.1.0
+appVersion: "0.29.3"
+keywords:
+  - headscale
+  - wireguard
+  - tailscale
+  - vpn
+home: https://github.com/juanfont/headscale
+maintainers:
+  - name: Ub0kal-org

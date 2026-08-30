@@ -1,0 +1,75 @@
+# Default values for headscale.
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+headscale:
+  image:
+    repository: ghcr.io/juanfont/headscale
+    tag: v0.29.3
+    pullPolicy: IfNotPresent
+  serverUrl: "https://headscale.keksi.si"
+  baseDomain: "vpn.keksi.si"
+  listenPort: 8080
+  metricsPort: 9090
+  grpcPort: 50443
+  stunPort: 3478
+  ipPrefixes:
+    v4: "100.64.0.0/10"
+    v6: "fd7a:115c:a1e0::/48"
+  nameservers:
+    - "1.1.1.1"
+    - "8.8.8.8"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+
+ui:
+  enabled: true
+  image:
+    repository: ghcr.io/gurucomputing/headscale-ui
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+persistence:
+  enabled: true
+  storageClass: "longhorn"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+
+service:
+  type: ClusterIP
+  httpPort: 8080
+  uiPort: 80
+  metricsPort: 9090
+  grpcPort: 50443
+  stun:
+    enabled: true
+    type: LoadBalancer
+    port: 3478
+
+ingress:
+  enabled: true
+  className: "caddy"
+  annotations:
+    cert-manager.io/enabled: "false"
+  host: "headscale.keksi.si"
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0

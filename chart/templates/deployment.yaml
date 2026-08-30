@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "headscale.fullname" . }}
+  labels:
+    {{- include "headscale.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "headscale.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "headscale.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: headscale
+          image: "{{ .Values.headscale.image.repository }}:{{ .Values.headscale.image.tag }}"
+          imagePullPolicy: {{ .Values.headscale.image.pullPolicy }}
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.headscale.listenPort }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.headscale.metricsPort }}
+              protocol: TCP
+            - name: stun-udp
+              containerPort: {{ .Values.headscale.stunPort }}
+              protocol: UDP
+            - name: grpc
+              containerPort: {{ .Values.headscale.grpcPort }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.headscale.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/headscale
+            - name: data
+              mountPath: /var/lib/headscale
+            - name: run
+              mountPath: /var/run/headscale
+
+        {{- if .Values.ui.enabled }}
+        - name: headscale-ui
+          image: "{{ .Values.ui.image.repository }}:{{ .Values.ui.image.tag }}"
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy }}
+          ports:
+            - name: ui
+              containerPort: {{ .Values.ui.port }}
+              protocol: TCP
+          env:
+            - name: HTTP_PORT
+              value: {{ .Values.ui.port | quote }}
+          resources:
+            {{- toYaml .Values.ui.resources | nindent 12 }}
+        {{- end }}
+
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "headscale.fullname" . }}-config
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "headscale.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: run
+          emptyDir: {}

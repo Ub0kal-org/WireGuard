@@ -9,8 +9,11 @@ spec:
   project: default
   source:
     repoURL: 'git@github.com:Ub0kal-org/WireGuard.git'
-    targetRevision: main
-    path: k3s
+    targetRevision: k3s-production
+    path: chart
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: headscale
