@@ -1,6 +1,6 @@
 services:
   headscale:
-    image: ghcr.io/juanfont/headscale:0.25.1
+    image: ghcr.io/juanfont/headscale:v0.25.0
     container_name: headscale
     restart: unless-stopped
     command: headscale serve

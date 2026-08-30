@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: headscale
-          image: ghcr.io/juanfont/headscale:0.25.1
+          image: ghcr.io/juanfont/headscale:v0.25.0
           command: ["headscale"]
           args: ["serve"]
           securityContext:
