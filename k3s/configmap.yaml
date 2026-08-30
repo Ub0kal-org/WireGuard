@@ -26,8 +26,8 @@ data:
         region_id: 999
         region_code: "keksi"
         region_name: "Keksi DERP & STUN Relay"
-        # Port 53 STUN listener for UDP NAT traversal & firewall bypass
-        stun_listen_addr: "0.0.0.0:53"
+        # STUN listener for UDP NAT traversal
+        stun_listen_addr: "0.0.0.0:3478"
         private_key_path: /var/lib/headscale/derp_server_private.key
         automatically_add_embedded_derp_region: true
         ipv4: 1.1.1.1

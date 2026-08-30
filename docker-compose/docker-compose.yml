@@ -13,8 +13,7 @@ services:
     ports:
       - "8080:8080"        # Control plane HTTP API
       - "9090:9090"        # Metrics
-      - "53:53/udp"        # STUN & NAT Traversal on Port 53 UDP
-      - "3478:53/udp"      # Standard STUN fallback port
+      - "3478:3478/udp"    # STUN & NAT Traversal
       - "50443:50443"      # gRPC endpoint
     cap_add:
       - NET_BIND_SERVICE

@@ -39,11 +39,8 @@ spec:
   selector:
     app.kubernetes.io/name: headscale
   ports:
-    - name: stun-dns
-      port: 53
-      targetPort: 53
-      protocol: UDP
-    - name: stun-default
+    # STUN & NAT traversal on port 3478 UDP (forward external router port 53 -> 3478 to avoid hijacking node internal DNS)
+    - name: stun
       port: 3478
-      targetPort: 53
+      targetPort: 3478
       protocol: UDP

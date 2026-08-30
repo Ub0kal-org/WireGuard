@@ -34,7 +34,7 @@ spec:
               containerPort: 9090
               protocol: TCP
             - name: stun-udp
-              containerPort: 53
+              containerPort: 3478
               protocol: UDP
             - name: grpc
               containerPort: 50443
