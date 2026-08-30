@@ -43,6 +43,11 @@ ui:
       cpu: 500m
       memory: 256Mi
 
+bootstrap:
+  enabled: true
+  user: "admin"
+  expiration: "365d"
+
 persistence:
   enabled: true
   storageClass: "longhorn"

@@ -10,6 +10,7 @@ An enterprise-grade, self-hosted [Headscale](https://github.com/juanfont/headsca
 - **Domain & MagicDNS**: Integrated MagicDNS under base domain **`vpn.keksi.si`** (nodes reachable as `<node>.vpn.keksi.si`).
 - **Firewall Bypass**: Embedded DERP & STUN relay listening on **UDP Port 3478** (forward external UDP port 53 -> 3478 on router for firewall bypass).
 - **Headscale Web UI**: Clean dashboard at `https://headscale.keksi.si/web` for managing users, nodes, pre-authentication keys, and routing rules.
+- **Automated Bootstrap Token Generation**: Automated Helm Hook Job initializes the `admin` user, generates a 365-day API token, and securely stores it in a Kubernetes Secret (`headscale-api-credentials`).
 - **Helm & GitOps Ready**: Fully packaged **Helm Chart** (`chart/`) with ArgoCD GitOps integration and Longhorn persistent storage.
 - **Dual Deployment Options**: Deploy via Helm / ArgoCD or standalone Docker Compose.
 
@@ -29,7 +30,9 @@ WireGuard/
 │       ├── pvc.yaml
 │       ├── deployment.yaml
 │       ├── service.yaml
-│       └── ingress.yaml
+│       ├── ingress.yaml
+│       ├── rbac.yaml             # Bootstrap RBAC
+│       └── bootstrap-job.yaml    # Automated user & API token generator
 ├── k3s/                          # Raw Kubernetes manifests (Kustomize fallback)
 ├── docker-compose/               # Standalone Docker Compose Deployment
 │   ├── docker-compose.yml
@@ -57,53 +60,25 @@ helm upgrade --install headscale ./chart \
   --create-namespace
 ```
 
-### 3. Customizing Values
-You can override any value from `chart/values.yaml`:
-```bash
-helm upgrade --install headscale ./chart \
-  --namespace headscale \
-  --set headscale.serverUrl="https://headscale.keksi.si" \
-  --set ingress.host="headscale.keksi.si"
-```
-
 ---
 
-## 🐳 Docker Compose Deployment (Standalone)
+## 🔑 Retrieving the Automated API Key
 
-To run Headscale on a standalone VM or server:
+The Helm chart automatically generates the API key during deployment. You can retrieve it anytime:
 
 ```bash
-cd docker-compose
-cp .env.example .env
-docker compose up -d
+# Retrieve the generated API Key from the secret:
+kubectl get secret headscale-api-credentials -n headscale -o jsonpath='{.data.api-key}' | base64 -d
+echo ""
 ```
 
----
+### ⚡ 1-Click Browser Login into the Web UI
+Open `https://headscale.keksi.si/web`, press **F12** (Open Console), and paste:
 
-## 🔑 Administrative Tasks (Headscale CLI)
-
-Run these commands inside the `headscale` container:
-
-### Generate API Key for Headscale Web UI
-```bash
-kubectl exec -it deployment/headscale -n headscale -c headscale -- headscale apikeys create
-```
-Paste this API Key into the Web UI dashboard at `https://headscale.keksi.si/web/settings.html` to link the UI.
-
-### Create a User
-```bash
-kubectl exec -it deployment/headscale -n headscale -c headscale -- headscale users create admin
-```
-
-### Generate a Pre-Auth Key (Reusable or Single-Use)
-```bash
-# Generate a reusable key valid for 90 days
-kubectl exec -it deployment/headscale -n headscale -c headscale -- headscale preauthkeys create -u admin --reusable --expiration 90d
-```
-
-### List Connected Nodes
-```bash
-kubectl exec -it deployment/headscale -n headscale -c headscale -- headscale nodes list
+```javascript
+localStorage.setItem('headscaleURL', 'https://headscale.keksi.si');
+localStorage.setItem('headscaleAPIKey', '<YOUR_API_KEY>');
+location.href = '/web';
 ```
 
 ---

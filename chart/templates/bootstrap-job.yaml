@@ -1,0 +1,48 @@
+{{- if .Values.bootstrap.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "headscale.fullname" . }}-bootstrap
+  labels:
+    {{- include "headscale.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      name: {{ include "headscale.fullname" . }}-bootstrap
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "headscale.fullname" . }}-admin
+      containers:
+        - name: bootstrap
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for Headscale pod to be ready..."
+              kubectl wait --for=condition=ready pod -l app.kubernetes.io/name={{ include "headscale.name" . }} -n {{ .Release.Namespace }} --timeout=180s
+              POD_NAME=$(kubectl get pod -l app.kubernetes.io/name={{ include "headscale.name" . }} -n {{ .Release.Namespace }} -o jsonpath='{.items[0].metadata.name}')
+              echo "Found Headscale pod: $POD_NAME"
+
+              # 1. Ensure admin user exists
+              kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c headscale -- headscale users create {{ .Values.bootstrap.user | quote }} || true
+
+              # 2. Generate API Key
+              API_KEY=$(kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c headscale -- headscale apikeys create --expiration {{ .Values.bootstrap.expiration | quote }})
+              echo "=========================================================="
+              echo "AUTOMATICALLY GENERATED HEADSCALE API KEY:"
+              echo "$API_KEY"
+              echo "=========================================================="
+
+              # 3. Store in Kubernetes Secret
+              kubectl create secret generic {{ include "headscale.fullname" . }}-api-credentials \
+                -n {{ .Release.Namespace }} \
+                --from-literal=url="{{ .Values.headscale.serverUrl }}" \
+                --from-literal=api-key="$API_KEY" \
+                --dry-run=client -o yaml | kubectl apply -f -
+              echo "Saved credentials to secret {{ include "headscale.fullname" . }}-api-credentials"
+{{- end }}
