@@ -60,16 +60,4 @@ data:
 
     policy:
       mode: file
-      path: /etc/headscale/acl.hujson
-
-  acl.hujson: |
-    // Headscale Access Control List (ACL)
-    {
-      "acls": [
-        {
-          "action": "accept",
-          "src": ["*"],
-          "dst": ["*:*"]
-        }
-      ]
-    }
+      path: ""
