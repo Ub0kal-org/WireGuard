@@ -12,13 +12,13 @@ data:
     grpc_listen_addr: 0.0.0.0:50443
     grpc_allow_insecure: false
 
-    private_key_path: /var/lib/headscale/private.key
     noise:
       private_key_path: /var/lib/headscale/noise_private.key
 
-    ip_prefixes:
-      - 100.64.0.0/10
-      - fd7a:115c:a1e0::/48
+    prefixes:
+      v4: 100.64.0.0/10
+      v6: fd7a:115c:a1e0::/48
+      allocation: sequential
 
     derp:
       server:
@@ -26,7 +26,7 @@ data:
         region_id: 999
         region_code: "keksi"
         region_name: "Keksi DERP & STUN Relay"
-        # Port 53 STUN listener for UDP punchthrough & firewall bypass
+        # Port 53 STUN listener for UDP NAT traversal & firewall bypass
         stun_listen_addr: "0.0.0.0:53"
         private_key_path: /var/lib/headscale/derp_server_private.key
         automatically_add_embedded_derp_region: true
@@ -38,10 +38,9 @@ data:
       update_frequency: 24h
 
     disable_check_updates: true
-    ephemeral_node_inactivity_timeout: 30m
 
     database:
-      type: sqlite3
+      type: sqlite
       sqlite:
         path: /var/lib/headscale/db.sqlite
 
@@ -49,8 +48,9 @@ data:
       magic_dns: true
       base_domain: keksi.si
       nameservers:
-        - 1.1.1.1
-        - 8.8.8.8
+        global:
+          - 1.1.1.1
+          - 8.8.8.8
       search_domains: []
       extra_records: []
 

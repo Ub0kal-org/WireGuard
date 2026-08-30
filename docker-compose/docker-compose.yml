@@ -1,13 +1,15 @@
 services:
   headscale:
-    image: headscale/headscale:0.24.0
+    image: headscale/headscale:0.29.3
     container_name: headscale
     restart: unless-stopped
-    command: headscale serve
+    command: serve
     volumes:
       - ./config/config.yaml:/etc/headscale/config.yaml:ro
       - ./config/acl.hujson:/etc/headscale/acl.hujson:ro
       - headscale_data:/var/lib/headscale
+    tmpfs:
+      - /var/run/headscale
     ports:
       - "8080:8080"        # Control plane HTTP API
       - "9090:9090"        # Metrics

@@ -19,9 +19,8 @@ spec:
     spec:
       containers:
         - name: headscale
-          image: headscale/headscale:0.24.0
+          image: headscale/headscale:0.29.3
           imagePullPolicy: IfNotPresent
-          command: ["headscale"]
           args: ["serve"]
           securityContext:
             capabilities:
@@ -68,6 +67,8 @@ spec:
               subPath: acl.hujson
             - name: data
               mountPath: /var/lib/headscale
+            - name: run
+              mountPath: /var/run/headscale
 
         - name: headscale-ui
           image: ghcr.io/gurucomputing/headscale-ui:latest
@@ -93,3 +94,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: headscale-data
+        - name: run
+          emptyDir: {}
