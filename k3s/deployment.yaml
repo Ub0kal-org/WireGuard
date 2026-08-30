@@ -25,7 +25,6 @@ spec:
         - name: headscale
           image: ghcr.io/juanfont/headscale:v0.29.3
           imagePullPolicy: IfNotPresent
-          command: ["headscale"]
           args: ["serve"]
           ports:
             - name: http

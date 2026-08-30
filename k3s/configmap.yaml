@@ -45,7 +45,7 @@ data:
 
     dns:
       magic_dns: true
-      base_domain: keksi.si
+      base_domain: vpn.keksi.si
       nameservers:
         global:
           - 1.1.1.1
@@ -60,4 +60,16 @@ data:
 
     policy:
       mode: file
-      path: ""
+      path: /etc/headscale/acl.hujson
+
+  acl.hujson: |
+    // Headscale Access Control List (ACL)
+    {
+      "acls": [
+        {
+          "action": "accept",
+          "src": ["*"],
+          "dst": ["*:*"]
+        }
+      ]
+    }
